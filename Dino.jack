@@ -1,0 +1,80 @@
+class Dino {
+    field int x, y; // "y" ahora representa las patas del perrito
+    field int width, height;
+    field int velocityY;
+    field boolean isJumping;
+
+    constructor Dino new(int startX, int startY) {
+        let x = startX;
+        let y = startY;
+        let width = 24;  // Ancho total del perrito
+        let height = 24; // Alto total
+        let velocityY = 0;
+        let isJumping = false;
+        do draw();
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true); // Negro
+        // Cuerpo
+        do Screen.drawRectangle(x+4, y-14, x+16, y-4);
+        // Cabeza
+        do Screen.drawRectangle(x+10, y-22, x+20, y-12);
+        // Hocico
+        do Screen.drawRectangle(x+20, y-18, x+24, y-14);
+        // Oreja
+        do Screen.drawRectangle(x+10, y-24, x+14, y-18);
+        // Cola
+        do Screen.drawRectangle(x, y-14, x+4, y-10);
+        // Pata trasera
+        do Screen.drawRectangle(x+4, y-4, x+8, y);
+        // Pata delantera
+        do Screen.drawRectangle(x+12, y-4, x+16, y);
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false); // Blanco
+        // Borramos el área total del perrito de golpe
+        do Screen.drawRectangle(x, y - height, x + width, y);
+        return;
+    }
+
+    method void jump() {
+        if (~isJumping) {
+            let velocityY = -11; // Impulso inicial del salto
+            let isJumping = true;
+        }
+        return;
+    }
+
+    method void move() {
+        if (isJumping) {
+            do erase();
+            
+            let velocityY = velocityY + 1; // Fuerza de gravedad
+            let y = y + velocityY;
+
+            // Límite del suelo exacto (Y=220)
+            if ((y > 219) | (y = 220)) {
+                let y = 220;
+                let velocityY = 0;
+                let isJumping = false;
+            }
+            
+            do draw();
+        }
+        return;
+    }
+
+    method int getX() { return x; }
+    method int getY() { return y - height; } // Borde superior para colisiones
+    method int getWidth() { return width; }
+    method int getHeight() { return height; }
+}

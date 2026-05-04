@@ -1,0 +1,94 @@
+class DinoGame {
+    field Dino dino;
+    field Obstacle cactus;
+    field int score;
+    field boolean exit;
+
+    constructor DinoGame new() {
+        do Screen.clearScreen();
+        do Screen.setColor(true);
+        // Dibujamos la línea del suelo
+        do Screen.drawLine(0, 220, 511, 220);
+
+        // Los objetos nacen sobre el suelo
+        let dino = Dino.new(50, 220);
+        let cactus = Obstacle.new(470, 220);
+        let score = 0;
+        let exit = false;
+
+        // Imprimir interfaz estática una sola vez
+        do Output.moveCursor(1, 1);
+        do Output.printString("Score: 0");
+        return this;
+    }
+
+    method void dispose() {
+        do dino.dispose();
+        do cactus.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void run() {
+        var char key;
+        var boolean crashed;
+        var int displayScore;
+        var int lastDisplayScore;
+
+        let lastDisplayScore = 0;
+
+        while (~exit) {
+            let key = Keyboard.keyPressed();
+
+            if (key = 81) { let exit = true; } // 'Q' para salir
+            if (key = 32) { do dino.jump(); }  // Barra espaciadora
+
+            // Mover objetos
+            do dino.move();
+            do cactus.move(6); // Velocidad del cocodrilo
+
+            // Verificar colisión
+            let crashed = checkCollision();
+            if (crashed) {
+                do Output.moveCursor(10, 27);
+                do Output.printString("GAME OVER!");
+                let exit = true;
+            } else {
+                let score = score + 1;
+                let displayScore = score / 10;
+                
+                // Actualizar score solo si cambia el número visible
+                if (displayScore > lastDisplayScore) {
+                    do Output.moveCursor(1, 8); 
+                    do Output.printInt(displayScore);
+                    let lastDisplayScore = displayScore;
+                }
+            }
+
+            do Sys.wait(25); // Control de los FPS
+        }
+        return;
+    }
+
+    method boolean checkCollision() {
+        var int dX, dY, dW, dH;
+        var int cX, cY, cW, cH;
+        var boolean colX, colY;
+
+        let dX = dino.getX();
+        let dY = dino.getY();
+        let dW = dino.getWidth();
+        let dH = dino.getHeight();
+
+        let cX = cactus.getX();
+        let cY = cactus.getY();
+        let cW = cactus.getWidth();
+        let cH = cactus.getHeight();
+
+        // Lógica de superposición de cajas
+        let colX = ((dX + dW) > cX) & (dX < (cX + cW));
+        let colY = ((dY + dH) > cY) & (dY < (cY + cH));
+
+        return (colX & colY);
+    }
+}

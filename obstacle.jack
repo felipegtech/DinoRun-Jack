@@ -1,0 +1,58 @@
+class Obstacle {
+    field int x, y; // "y" es la base del cocodrilo tocando el suelo
+    field int width, height;
+
+    constructor Obstacle new(int startX, int startY) {
+        let x = startX;
+        let y = startY;
+        let width = 32;  // Más largo
+        let height = 12; // Más pegado al suelo
+        do draw();
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true); // Negro
+        // Cuerpo largo
+        do Screen.drawRectangle(x+6, y-10, x+24, y-4);
+        // Mandíbula superior
+        do Screen.drawRectangle(x, y-12, x+8, y-8);
+        // Mandíbula inferior
+        do Screen.drawRectangle(x+2, y-6, x+8, y-2);
+        // Cola
+        do Screen.drawRectangle(x+24, y-8, x+32, y-6);
+        // Patas
+        do Screen.drawRectangle(x+8, y-4, x+12, y);
+        do Screen.drawRectangle(x+18, y-4, x+22, y);
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false); // Blanco
+        do Screen.drawRectangle(x, y - height, x + width, y);
+        return;
+    }
+
+    method void move(int speed) {
+        do erase();
+        let x = x - speed;
+
+        // Reaparecer al final de la pantalla sin crashear
+        if (x < 10) {
+            let x = 470; 
+        }
+
+        do draw();
+        return;
+    }
+
+    method int getX() { return x; }
+    method int getY() { return y - height; }
+    method int getWidth() { return width; }
+    method int getHeight() { return height; }
+}
