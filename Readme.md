@@ -35,3 +35,5 @@ El juego está dividido en 4 clases principales para separar las responsabilidad
 ## 🛠️ Tecnologías
 *   **Lenguaje:** Jack (Alto nivel, orientado a objetos).
 *   **Plataforma:** Hack Virtual Machine.
+
+  ![Demo del Juego](assets/GameDemo.png)
