@@ -1,12 +1,13 @@
 class Obstacle {
-    field int x, y; // "y" es la base del cocodrilo tocando el suelo
+    field int x, y;
     field int width, height;
 
     constructor Obstacle new(int startX, int startY) {
         let x = startX;
         let y = startY;
-        let width = 32;  // Más largo
-        let height = 12; // Más pegado al suelo
+        let width = 78;
+        let height = 20;
+
         do draw();
         return this;
     }
@@ -16,43 +17,72 @@ class Obstacle {
         return;
     }
 
+    method boolean isDrawable() {
+        return (y > 0) & ((y + height) < 256);
+    }
+
     method void draw() {
-        do Screen.setColor(true); // Negro
-        // Cuerpo largo
-        do Screen.drawRectangle(x+6, y-10, x+24, y-4);
-        // Mandíbula superior
-        do Screen.drawRectangle(x, y-12, x+8, y-8);
-        // Mandíbula inferior
-        do Screen.drawRectangle(x+2, y-6, x+8, y-2);
-        // Cola
-        do Screen.drawRectangle(x+24, y-8, x+32, y-6);
-        // Patas
-        do Screen.drawRectangle(x+8, y-4, x+12, y);
-        do Screen.drawRectangle(x+18, y-4, x+22, y);
+        if (isDrawable()) {
+            do Screen.setColor(true);
+
+            do Screen.drawRectangle(x + 8, y + 12, x + 70, y + 18);
+            do Screen.drawRectangle(x + 16, y + 8, x + 34, y + 16);
+            do Screen.drawRectangle(x + 30, y + 4, x + 52, y + 18);
+            do Screen.drawRectangle(x + 50, y + 8, x + 66, y + 16);
+            do Screen.drawRectangle(x, y + 14, x + 14, y + 18);
+            do Screen.drawRectangle(x + 64, y + 14, x + 78, y + 18);
+        }
+
         return;
     }
 
     method void erase() {
-        do Screen.setColor(false); // Blanco
-        do Screen.drawRectangle(x, y - height, x + width, y);
-        return;
-    }
-
-    method void move(int speed) {
-        do erase();
-        let x = x - speed;
-
-        // Reaparecer al final de la pantalla sin crashear
-        if (x < 10) {
-            let x = 470; 
+        if (isDrawable()) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, y, x + width, y + height);
         }
 
-        do draw();
         return;
     }
 
-    method int getX() { return x; }
-    method int getY() { return y - height; }
-    method int getWidth() { return width; }
-    method int getHeight() { return height; }
+    method void moveDown(int amount) {
+        do erase();
+
+        let y = y + amount;
+
+        do draw();
+
+        return;
+    }
+
+    method void setPosition(int newX, int newY) {
+        do erase();
+
+        let x = newX;
+        let y = newY;
+
+        do draw();
+
+        return;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method int getHeight() {
+        return height;
+    }
+
+    method int getCenterX() {
+        return x + (width / 2);
+    }
 }

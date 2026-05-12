@@ -1,94 +1,226 @@
 class DinoGame {
-    field Dino dino;
-    field Obstacle cactus;
+    field Dino player;
+    field Array clouds;
+    field int cloudCount;
+    field int nextCloud;
     field int score;
     field boolean exit;
 
+    field int lastTopX;
+    field int pathDirection;
+    field int seed;
+
     constructor DinoGame new() {
         do Screen.clearScreen();
-        do Screen.setColor(true);
-        // Dibujamos la línea del suelo
-        do Screen.drawLine(0, 220, 511, 220);
 
-        // Los objetos nacen sobre el suelo
-        let dino = Dino.new(50, 220);
-        let cactus = Obstacle.new(470, 220);
+        let cloudCount = 7;
+        let clouds = Array.new(cloudCount);
+
+        // Initial diagonal path.
+        let clouds[0] = Obstacle.new(45, 225);
+        let clouds[1] = Obstacle.new(105, 190);
+        let clouds[2] = Obstacle.new(165, 155);
+        let clouds[3] = Obstacle.new(225, 120);
+        let clouds[4] = Obstacle.new(285, 85);
+        let clouds[5] = Obstacle.new(345, 50);
+        let clouds[6] = Obstacle.new(405, 15);
+
+        // Player starts on the first cloud.
+        let player = Dino.new(75, 203);
+
+        let nextCloud = 1;
         let score = 0;
         let exit = false;
 
-        // Imprimir interfaz estática una sola vez
-        do Output.moveCursor(1, 1);
-        do Output.printString("Score: 0");
+        // These fields generate new clouds without repeating a fixed pattern.
+        let lastTopX = 405;
+        let pathDirection = 0 - 1;
+        let seed = 17;
+
         return this;
     }
 
     method void dispose() {
-        do dino.dispose();
-        do cactus.dispose();
+        var int i;
+        var Obstacle cloud;
+
+        do player.dispose();
+
+        let i = 0;
+        while (i < cloudCount) {
+            let cloud = clouds[i];
+            do cloud.dispose();
+            let i = i + 1;
+        }
+
+        do clouds.dispose();
         do Memory.deAlloc(this);
+
         return;
     }
 
     method void run() {
-        var char key;
-        var boolean crashed;
-        var int displayScore;
-        var int lastDisplayScore;
-
-        let lastDisplayScore = 0;
+        var int key;
+        var int oldBottom;
 
         while (~exit) {
             let key = Keyboard.keyPressed();
 
-            if (key = 81) { let exit = true; } // 'Q' para salir
-            if (key = 32) { do dino.jump(); }  // Barra espaciadora
-
-            // Mover objetos
-            do dino.move();
-            do cactus.move(6); // Velocidad del cocodrilo
-
-            // Verificar colisión
-            let crashed = checkCollision();
-            if (crashed) {
-                do Output.moveCursor(10, 27);
-                do Output.printString("GAME OVER!");
+            if (key = 81) {
                 let exit = true;
-            } else {
-                let score = score + 1;
-                let displayScore = score / 10;
-                
-                // Actualizar score solo si cambia el número visible
-                if (displayScore > lastDisplayScore) {
-                    do Output.moveCursor(1, 8); 
-                    do Output.printInt(displayScore);
-                    let lastDisplayScore = displayScore;
+            }
+
+            // Space: jump to the next cloud.
+            if (key = 32) {
+                if (player.isGrounded()) {
+                    do player.jumpTo(getNextCloudCenter());
                 }
             }
 
-            do Sys.wait(25); // Control de los FPS
+            let oldBottom = player.getBottom();
+
+            // Jump physics.
+            do player.applyPhysics();
+
+            // The world is always moving down.
+            do moveWorldDown(1);
+
+            // If the player is standing on a cloud, he moves with the world.
+            if (player.isGrounded()) {
+                do player.moveDown(1);
+            }
+
+            do checkLanding(oldBottom);
+            do recycleClouds();
+
+            if (player.getY() > 245) {
+                do Output.moveCursor(10, 24);
+                do Output.printString("GAME OVER!");
+                let exit = true;
+            }
+
+            do Sys.wait(35);
         }
+
         return;
     }
 
-    method boolean checkCollision() {
-        var int dX, dY, dW, dH;
-        var int cX, cY, cW, cH;
-        var boolean colX, colY;
+    method int getNextCloudCenter() {
+        var Obstacle cloud;
 
-        let dX = dino.getX();
-        let dY = dino.getY();
-        let dW = dino.getWidth();
-        let dH = dino.getHeight();
+        let cloud = clouds[nextCloud];
+        return cloud.getCenterX();
+    }
 
-        let cX = cactus.getX();
-        let cY = cactus.getY();
-        let cW = cactus.getWidth();
-        let cH = cactus.getHeight();
+    method void checkLanding(int oldBottom) {
+        var Obstacle cloud;
 
-        // Lógica de superposición de cajas
-        let colX = ((dX + dW) > cX) & (dX < (cX + cW));
-        let colY = ((dY + dH) > cY) & (dY < (cY + cH));
+        let cloud = clouds[nextCloud];
 
-        return (colX & colY);
+        if (isLandingOn(cloud, oldBottom)) {
+            do player.landOn(cloud.getY());
+
+            let nextCloud = nextCloud + 1;
+
+            if (nextCloud = cloudCount) {
+                let nextCloud = 0;
+            }
+
+            let score = score + 1;
+        }
+
+        return;
+    }
+
+    method boolean isLandingOn(Obstacle cloud, int oldBottom) {
+        var int cX, cY, cW;
+        var int pX, pW, pBottom;
+        var boolean falling;
+        var boolean crossingTop;
+        var boolean overlapX;
+
+        let cX = cloud.getX();
+        let cY = cloud.getY();
+        let cW = cloud.getWidth();
+
+        let pX = player.getX();
+        let pW = player.getWidth();
+        let pBottom = player.getBottom();
+
+        let falling = player.getVelocityY() > 0;
+
+        let crossingTop = (oldBottom < (cY + 10)) & (pBottom > (cY - 10));
+        let overlapX = ((pX + pW) > cX) & (pX < (cX + cW));
+
+        return falling & crossingTop & overlapX;
+    }
+
+    method void moveWorldDown(int amount) {
+        var int i;
+        var Obstacle cloud;
+
+        let i = 0;
+
+        while (i < cloudCount) {
+            let cloud = clouds[i];
+            do cloud.moveDown(amount);
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method void recycleClouds() {
+        var int i;
+        var Obstacle cloud;
+
+        let i = 0;
+
+        while (i < cloudCount) {
+            let cloud = clouds[i];
+
+            if (cloud.getY() > 255) {
+                do resetCloud(cloud);
+            }
+
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    method int nextVariation() {
+        let seed = seed + 37;
+
+        if (seed > 150) {
+            let seed = seed - 150;
+        }
+
+        return seed / 5;
+    }
+
+    method void resetCloud(Obstacle cloud) {
+        var int variation;
+        var int step;
+
+        let variation = nextVariation();
+        let step = 52 + variation;
+
+        let lastTopX = lastTopX + (pathDirection * step);
+
+        if (lastTopX > 410) {
+            let lastTopX = 410;
+            let pathDirection = 0 - 1;
+        }
+
+        if (lastTopX < 40) {
+            let lastTopX = 40;
+            let pathDirection = 1;
+        }
+
+        // New clouds always appear at the top, but with a changing diagonal path.
+        do cloud.setPosition(lastTopX, 10);
+
+        return;
     }
 }

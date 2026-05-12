@@ -1,16 +1,18 @@
 class Dino {
-    field int x, y; // "y" ahora representa las patas del perrito
+    field int x, y;
     field int width, height;
-    field int velocityY;
-    field boolean isJumping;
+    field int velocityX, velocityY;
+    field boolean grounded;
 
     constructor Dino new(int startX, int startY) {
         let x = startX;
         let y = startY;
-        let width = 24;  // Ancho total del perrito
-        let height = 24; // Alto total
+        let width = 18;
+        let height = 22;
+        let velocityX = 0;
         let velocityY = 0;
-        let isJumping = false;
+        let grounded = true;
+
         do draw();
         return this;
     }
@@ -20,61 +22,142 @@ class Dino {
         return;
     }
 
+    method boolean isDrawable() {
+        return (y > 0) & ((y + height) < 256);
+    }
+
     method void draw() {
-        do Screen.setColor(true); // Negro
-        // Cuerpo
-        do Screen.drawRectangle(x+4, y-14, x+16, y-4);
-        // Cabeza
-        do Screen.drawRectangle(x+10, y-22, x+20, y-12);
-        // Hocico
-        do Screen.drawRectangle(x+20, y-18, x+24, y-14);
-        // Oreja
-        do Screen.drawRectangle(x+10, y-24, x+14, y-18);
-        // Cola
-        do Screen.drawRectangle(x, y-14, x+4, y-10);
-        // Pata trasera
-        do Screen.drawRectangle(x+4, y-4, x+8, y);
-        // Pata delantera
-        do Screen.drawRectangle(x+12, y-4, x+16, y);
+        if (isDrawable()) {
+            do Screen.setColor(true);
+
+            do Screen.drawRectangle(x + 4, y + 6, x + 14, y + 18);
+            do Screen.drawRectangle(x + 6, y, x + 16, y + 8);
+            do Screen.drawRectangle(x + 4, y, x + 8, y + 4);
+            do Screen.drawRectangle(x, y + 10, x + 4, y + 14);
+            do Screen.drawRectangle(x + 4, y + 18, x + 7, y + 22);
+            do Screen.drawRectangle(x + 11, y + 18, x + 14, y + 22);
+        }
+
         return;
     }
 
     method void erase() {
-        do Screen.setColor(false); // Blanco
-        // Borramos el área total del perrito de golpe
-        do Screen.drawRectangle(x, y - height, x + width, y);
-        return;
-    }
-
-    method void jump() {
-        if (~isJumping) {
-            let velocityY = -11; // Impulso inicial del salto
-            let isJumping = true;
+        if (isDrawable()) {
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x, y, x + width, y + height);
         }
+
         return;
     }
 
-    method void move() {
-        if (isJumping) {
+    method void jumpTo(int targetCenterX) {
+        var int currentCenter;
+        var int distance;
+
+        if (grounded) {
+            let currentCenter = x + (width / 2);
+            let distance = targetCenterX - currentCenter;
+
+            let velocityX = distance / 20;
+
+            if ((velocityX > 0) & (velocityX < 3)) {
+                let velocityX = 3;
+            }
+
+            if ((velocityX < 0) & (velocityX > (0 - 3))) {
+                let velocityX = 0 - 3;
+            }
+
+            if (velocityX > 6) {
+                let velocityX = 6;
+            }
+
+            if (velocityX < (0 - 6)) {
+                let velocityX = 0 - 6;
+            }
+
+            let velocityY = 0 - 12;
+            let grounded = false;
+        }
+
+        return;
+    }
+
+    method void applyPhysics() {
+        if (~grounded) {
             do erase();
-            
-            let velocityY = velocityY + 1; // Fuerza de gravedad
+
+            let velocityY = velocityY + 1;
+
+            if (velocityY > 10) {
+                let velocityY = 10;
+            }
+
+            let x = x + velocityX;
             let y = y + velocityY;
 
-            // Límite del suelo exacto (Y=220)
-            if ((y > 219) | (y = 220)) {
-                let y = 220;
-                let velocityY = 0;
-                let isJumping = false;
+            if (x < 0) {
+                let x = 0;
             }
-            
+
+            if (x > 493) {
+                let x = 493;
+            }
+
             do draw();
         }
+
         return;
     }
 
-    method int getX() { return x; }
-    method int getY() { return y - height; } // Borde superior para colisiones
-    method int getWidth() { return width; }
-    method int getHeight() { return height; }
+    method void landOn(int cloudY) {
+        do erase();
+
+        let y = cloudY - height;
+        let velocityX = 0;
+        let velocityY = 0;
+        let grounded = true;
+
+        do draw();
+
+        return;
+    }
+
+    method void moveDown(int amount) {
+        do erase();
+
+        let y = y + amount;
+
+        do draw();
+
+        return;
+    }
+
+    method boolean isGrounded() {
+        return grounded;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method int getWidth() {
+        return width;
+    }
+
+    method int getHeight() {
+        return height;
+    }
+
+    method int getBottom() {
+        return y + height;
+    }
+
+    method int getVelocityY() {
+        return velocityY;
+    }
 }
